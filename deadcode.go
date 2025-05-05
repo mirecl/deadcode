@@ -32,11 +32,13 @@ func New(settings any) (register.LinterPlugin, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(issues)
 
 	return &DeadCode{issues}, nil
 }
 
 func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
+	fmt.Println("BuildAnalyzers")
 	return []*analysis.Analyzer{
 		{
 			Name: "deadcodego",
@@ -47,6 +49,7 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 }
 
 func (d *DeadCode) run(pass *analysis.Pass) (interface{}, error) {
+	fmt.Println("run")
 	for _, file := range pass.Files {
 		for _, issue := range d.issues {
 			fmt.Println(file.Name.String(), issue.Filename)
