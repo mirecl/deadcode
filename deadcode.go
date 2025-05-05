@@ -1,7 +1,6 @@
 package deadcode
 
 import (
-	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -49,6 +48,7 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 }
 
 func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
+	log.Println(111)
 	for _, file := range pass.Files {
 		pos := pass.Fset.Position(file.Pos())
 		for _, issue := range d.issues {
@@ -194,7 +194,6 @@ func runAnalysis() ([]Issue, error) {
 	}
 
 	return issues, nil
-	// printObjects(issues)
 }
 
 func GetFilenameRelative(filename string) string {
@@ -202,16 +201,6 @@ func GetFilenameRelative(filename string) string {
 		return rel
 	}
 	return filename
-}
-
-// printObjects formats an array of objects, either as JSON or using a
-// template, following the manner of 'go list (-json|-f=template)'.
-func printObjects(issues []Issue) {
-	out, err := json.MarshalIndent(issues, "", "\t")
-	if err != nil {
-		log.Fatalf("internal error: %v", err)
-	}
-	os.Stdout.Write(out)
 }
 
 type DeadCode struct {
