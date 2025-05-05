@@ -49,11 +49,10 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 }
 
 func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
-	// panic(len(pass.Files))
 	for _, file := range pass.Files {
+		pos := pass.Fset.Position(file.Pos())
 		for _, issue := range d.issues {
-			// panic(file.Name.String())
-			if GetFilenameRelative(file.Name.String()) == issue.Filename {
+			if GetFilenameRelative(pos.Filename) == issue.Filename {
 				pass.Report(analysis.Diagnostic{
 					Pos:            issue.Pos,
 					End:            0,
@@ -63,13 +62,6 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 			}
 		}
 	}
-
-	pass.Report(analysis.Diagnostic{
-		Pos:            d.issues[0].Pos,
-		End:            0,
-		Message:        fmt.Sprintf("unreachable func: %s", d.issues[0].Name),
-		SuggestedFixes: nil,
-	})
 
 	return nil, nil
 }
