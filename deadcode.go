@@ -48,8 +48,8 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	}, nil
 }
 
-func (d *DeadCode) run(pass *analysis.Pass) (interface{}, error) {
-	fmt.Println("run")
+func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
+	panic("run")
 	for _, file := range pass.Files {
 		for _, issue := range d.issues {
 			fmt.Println(file.Name.String(), issue.Filename)
@@ -70,6 +70,7 @@ func (d *DeadCode) run(pass *analysis.Pass) (interface{}, error) {
 		Message:        fmt.Sprintf("unreachable func: %s", d.issues[0].Name),
 		SuggestedFixes: nil,
 	})
+
 	return nil, nil
 }
 
