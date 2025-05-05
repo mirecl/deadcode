@@ -49,7 +49,7 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		pos := pass.Fset.Position(file.Pos())
 		for _, issue := range d.issues {
-			if pos.Filename == issue.Filename {
+			if GetFilenameRelative(pos.Filename) == issue.Filename {
 				pass.Report(analysis.Diagnostic{
 					Pos:            issue.Pos,
 					End:            0,
