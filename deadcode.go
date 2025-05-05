@@ -64,12 +64,12 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 		}
 	}
 
-	pass.Report(analysis.Diagnostic{
-		Pos:            d.issues[0].Pos,
-		End:            0,
-		Message:        fmt.Sprintf("unreachable func: %s", d.issues[0].Name),
-		SuggestedFixes: nil,
-	})
+	// pass.Report(analysis.Diagnostic{
+	// 	Pos:            d.issues[0].Pos,
+	// 	End:            0,
+	// 	Message:        fmt.Sprintf("unreachable func: %s", d.issues[0].Name),
+	// 	SuggestedFixes: nil,
+	// })
 
 	return nil, nil
 }
