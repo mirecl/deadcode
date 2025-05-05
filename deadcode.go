@@ -40,7 +40,7 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	fmt.Println("BuildAnalyzers")
 	return []*analysis.Analyzer{
 		{
-			Name: "deadfunc",
+			Name: "deadcode",
 			Doc:  "finds unused funcs",
 			Run:  d.run,
 		},
