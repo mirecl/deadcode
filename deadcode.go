@@ -48,34 +48,19 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 }
 
 func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
-	log.Println(111)
-	// for _, file := range pass.Files {
-	// 	// pos := pass.Fset.Position(file.Pos())
-	// 	for _, issue := range d.issues {
-	// 		// if GetFilenameRelative(pos.Filename) == issue.Filename {
-	// 		pass.Report(analysis.Diagnostic{
-	// 			Pos:            file.Pos(),
-	// 			End:            0,
-	// 			Message:        fmt.Sprintf("unreachable func: %s", issue.Name),
-	// 			SuggestedFixes: nil,
-	// 		})
-	// 		// }
-	// 	}
-	// }
-	r := ""
+
 	for _, file := range pass.Files {
 		pos := pass.Fset.Position(file.Pos())
-		f := GetFilenameRelative(pos.Filename)
-		r = r + f
-	}
-
-	for _, issue := range d.issues {
-		pass.Report(analysis.Diagnostic{
-			Pos:            issue.Pos,
-			End:            0,
-			Message:        fmt.Sprintf("unreachable func 666: %s + %s", issue.Name, r),
-			SuggestedFixes: nil,
-		})
+		for _, issue := range d.issues {
+			if GetFilenameRelative(pos.Filename) == issue.Filename {
+				pass.Report(analysis.Diagnostic{
+					Pos:            file.Pos(),
+					End:            0,
+					Message:        fmt.Sprintf("unreachable func: %s", issue.Name),
+					SuggestedFixes: nil,
+				})
+			}
+		}
 	}
 
 	return nil, nil
