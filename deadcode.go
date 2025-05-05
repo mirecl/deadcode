@@ -23,7 +23,7 @@ import (
 var cwd, _ = os.Getwd()
 
 func init() {
-	register.Plugin("nocall", New)
+	register.Plugin("deadfunc", New)
 }
 
 func New(settings any) (register.LinterPlugin, error) {
@@ -40,7 +40,7 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	fmt.Println("BuildAnalyzers")
 	return []*analysis.Analyzer{
 		{
-			Name: "deadcode",
+			Name: "deadfunc",
 			Doc:  "finds unused funcs",
 			Run:  d.run,
 		},
