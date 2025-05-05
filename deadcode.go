@@ -73,7 +73,7 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 		pass.Report(analysis.Diagnostic{
 			Pos:            issue.Pos,
 			End:            0,
-			Message:        fmt.Sprintf("unreachable func: %s + %s", issue.Name, r),
+			Message:        fmt.Sprintf("unreachable func 666: %s + %s", issue.Name, r),
 			SuggestedFixes: nil,
 		})
 	}
