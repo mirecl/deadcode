@@ -23,7 +23,7 @@ import (
 var cwd, _ = os.Getwd()
 
 func init() {
-	register.Plugin("deadcode", New)
+	register.Plugin("nocall", New)
 }
 
 func New(settings any) (register.LinterPlugin, error) {
