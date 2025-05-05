@@ -23,7 +23,7 @@ import (
 var cwd, _ = os.Getwd()
 
 func init() {
-	register.Plugin("deadcodego", New)
+	register.Plugin("deadcode", New)
 }
 
 func New(settings any) (register.LinterPlugin, error) {
@@ -41,7 +41,7 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	return []*analysis.Analyzer{
 		{
 			Name: "deadcode",
-			Doc:  "finds unreachable funcs",
+			Doc:  "finds unused funcs",
 			Run:  d.run,
 		},
 	}, nil
@@ -56,7 +56,7 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 					Pos:            issue.Pos,
 					End:            0,
 					Category:       "deadcode",
-					Message:        fmt.Sprintf("unreachable func: %s", issue.Name),
+					Message:        fmt.Sprintf("unused func `%s`", issue.Name),
 					SuggestedFixes: nil,
 				})
 			}
