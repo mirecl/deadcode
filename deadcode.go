@@ -52,7 +52,7 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 	// panic(len(pass.Files))
 	for _, file := range pass.Files {
 		for _, issue := range d.issues {
-			panic(file.Name.String())
+			// panic(file.Name.String())
 			if GetFilenameRelative(file.Name.String()) == issue.Filename {
 				pass.Report(analysis.Diagnostic{
 					Pos:            issue.Pos,
