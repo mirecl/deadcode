@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 
 	"github.com/golangci/plugin-module-register/register"
 	"golang.org/x/tools/go/analysis"
@@ -167,14 +168,14 @@ func runAnalysis() ([]Issue, error) {
 
 	// Build array of jsonPackage objects.
 	var issues []Issue
-	for pkgpath := range maps.Keys(byPkgPath) {
+	for _, pkgpath := range slices.Sorted(maps.Keys(byPkgPath)) {
 		if !filter.MatchString(pkgpath) {
 			continue
 		}
 
 		m := byPkgPath[pkgpath]
 
-		for fn := range maps.Keys(m) {
+		for _, fn := range slices.Collect(maps.Keys(m)) {
 			pos := prog.Fset.Position(fn.Pos())
 
 			if generated[pos.Filename] {
