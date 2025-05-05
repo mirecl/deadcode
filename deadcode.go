@@ -54,7 +54,7 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 					Pos:            issue.Pos,
 					End:            0,
 					Category:       "deadcode",
-					Message:        fmt.Sprintf("unused func `%s`", issue.Name),
+					Message:        fmt.Sprintf("unused func `%s` %s - %s", issue.Name, GetFilenameRelative(pos.Filename), issue.Filename),
 					SuggestedFixes: nil,
 				})
 			}
