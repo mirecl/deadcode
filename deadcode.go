@@ -24,7 +24,7 @@ import (
 var cwd, _ = os.Getwd()
 
 func init() {
-	register.Plugin("deadcode", New)
+	register.Plugin("deadcode1", New)
 }
 
 func New(settings any) (register.LinterPlugin, error) {
@@ -39,7 +39,7 @@ func New(settings any) (register.LinterPlugin, error) {
 func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	return []*analysis.Analyzer{
 		{
-			Name: "deadcode",
+			Name: "deadcode1",
 			Doc:  "finds unreachable funcs",
 			Run:  d.run,
 		},
