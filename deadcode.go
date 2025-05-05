@@ -49,12 +49,12 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		pos := pass.Fset.Position(file.Pos())
 		for _, issue := range d.issues {
-			if GetFilenameRelative(pos.Filename) == issue.Filename {
+			if pos.Filename == issue.Filename {
 				pass.Report(analysis.Diagnostic{
 					Pos:            issue.Pos,
 					End:            0,
 					Category:       "deadcode",
-					Message:        fmt.Sprintf("unused func `%s` %s (%s) - %v", issue.Name, GetFilenameRelative(pos.Filename), pos.Filename, issue),
+					Message:        fmt.Sprintf("unused func `%s`", issue.Name),
 					SuggestedFixes: nil,
 				})
 			}
