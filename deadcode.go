@@ -40,7 +40,7 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	fmt.Println("BuildAnalyzers")
 	return []*analysis.Analyzer{
 		{
-			Name: "deadcodego",
+			Name: "deadcode",
 			Doc:  "finds unreachable funcs",
 			Run:  d.run,
 		},
@@ -55,6 +55,7 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 				pass.Report(analysis.Diagnostic{
 					Pos:            issue.Pos,
 					End:            0,
+					Category:       "deadcode",
 					Message:        fmt.Sprintf("unreachable func: %s", issue.Name),
 					SuggestedFixes: nil,
 				})
