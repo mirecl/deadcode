@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 
 	"github.com/golangci/plugin-module-register/register"
 	"golang.org/x/tools/go/analysis"
@@ -49,7 +48,7 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		pos := pass.Fset.Position(file.Pos())
 		for _, issue := range d.issues {
-			if GetFilenameRelative(pos.Filename) == issue.Filename {
+			if pos.Filename == issue.Filename {
 				pass.Report(analysis.Diagnostic{
 					Pos:            issue.Pos,
 					End:            0,
@@ -168,14 +167,14 @@ func runAnalysis() ([]Issue, error) {
 
 	// Build array of jsonPackage objects.
 	var issues []Issue
-	for _, pkgpath := range slices.Sorted(maps.Keys(byPkgPath)) {
+	for pkgpath := range maps.Keys(byPkgPath) {
 		if !filter.MatchString(pkgpath) {
 			continue
 		}
 
 		m := byPkgPath[pkgpath]
 
-		for _, fn := range slices.Collect(maps.Keys(m)) {
+		for fn := range maps.Keys(m) {
 			pos := prog.Fset.Position(fn.Pos())
 
 			if generated[pos.Filename] {
@@ -184,7 +183,7 @@ func runAnalysis() ([]Issue, error) {
 
 			issues = append(issues, Issue{
 				Name:     fn.Name(),
-				Filename: GetFilenameRelative(pos.Filename),
+				Filename: pos.Filename,
 				Line:     pos.Line,
 				Pos:      fn.Pos(),
 			})
