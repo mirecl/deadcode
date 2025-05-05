@@ -31,13 +31,11 @@ func New(settings any) (register.LinterPlugin, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(issues)
 
 	return &DeadCode{issues}, nil
 }
 
 func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
-	fmt.Println("BuildAnalyzers")
 	return []*analysis.Analyzer{
 		{
 			Name: "deadcode",
