@@ -49,7 +49,7 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 }
 
 func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
-	fmt.Println("run")
+	panic(len(pass.Files))
 	for _, file := range pass.Files {
 		for _, issue := range d.issues {
 			panic(file.Name.String())
