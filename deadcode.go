@@ -11,8 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sync"
-	"time"
 
 	"github.com/golangci/plugin-module-register/register"
 	"golang.org/x/tools/go/analysis"
@@ -35,9 +33,7 @@ func New(settings any) (register.LinterPlugin, error) {
 	}
 	fmt.Println(issues)
 
-	logger, _ := NewLogger("app.log")
-
-	return &DeadCode{issues: issues, logger: *logger}, nil
+	return &DeadCode{issues}, nil
 }
 
 func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
@@ -52,20 +48,28 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 }
 
 func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
-	d.logger.WriteLog("INFO", "run")
-	for _, file := range pass.Files {
-		pos := pass.Fset.Position(file.Pos())
-		for _, issue := range d.issues {
-			d.logger.WriteLog("INFO", issue.Filename)
-			if GetFilenameRelative(pos.Filename) == issue.Filename {
-				pass.Report(analysis.Diagnostic{
-					Pos:            issue.Pos,
-					End:            0,
-					Message:        fmt.Sprintf("unreachable func: %s", issue.Name),
-					SuggestedFixes: nil,
-				})
-			}
-		}
+	// log.Println(111)
+	// for _, file := range pass.Files {
+	// 	pos := pass.Fset.Position(file.Pos())
+	// 	for _, issue := range d.issues {
+	// 		if GetFilenameRelative(pos.Filename) == issue.Filename {
+	// 			pass.Report(analysis.Diagnostic{
+	// 				Pos:            issue.Pos,
+	// 				End:            0,
+	// 				Message:        fmt.Sprintf("unreachable func: %s", issue.Name),
+	// 				SuggestedFixes: nil,
+	// 			})
+	// 		}
+	// 	}
+	// }
+
+	for _, issue := range d.issues {
+		pass.Report(analysis.Diagnostic{
+			Pos:            issue.Pos,
+			End:            0,
+			Message:        fmt.Sprintf("unreachable func: %s", issue.Name),
+			SuggestedFixes: nil,
+		})
 	}
 
 	return nil, nil
@@ -73,33 +77,6 @@ func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 
 func (d *DeadCode) GetLoadMode() string {
 	return register.LoadModeSyntax
-}
-
-type Logger struct {
-	file *os.File
-	mu   sync.Mutex
-}
-
-func NewLogger(filename string) (*Logger, error) {
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, err
-	}
-	return &Logger{file: file}, nil
-}
-
-func (l *Logger) WriteLog(level, message string) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	timestamp := time.Now().Format(time.RFC3339)
-	logEntry := fmt.Sprintf("[%s] [%s] %s\n", timestamp, level, message)
-	_, err := l.file.WriteString(logEntry)
-	return err
-}
-
-func (l *Logger) Close() error {
-	return l.file.Close()
 }
 
 func runAnalysis() ([]Issue, error) {
@@ -237,7 +214,6 @@ func GetFilenameRelative(filename string) string {
 
 type DeadCode struct {
 	issues []Issue
-	logger Logger
 }
 
 type Issue struct {
