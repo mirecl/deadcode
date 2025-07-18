@@ -1,16 +1,15 @@
 package deadcode
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
-	"log"
 	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 
 	"github.com/golangci/plugin-module-register/register"
 	"golang.org/x/tools/go/analysis"
@@ -22,12 +21,36 @@ import (
 
 var cwd, _ = os.Getwd()
 
-func init() {
-	register.Plugin("deadfunc", New)
+// DeadCode instance linter.
+type DeadCode struct {
+	issues []Issue
 }
 
-func New(settings any) (register.LinterPlugin, error) {
-	issues, err := runAnalysis()
+// Issue from linter.
+type Issue struct {
+	Func     string
+	Filename string
+	Line     int
+}
+
+// Settings linter.
+type Settings struct {
+	Test   bool   `json:"test"`
+	Filter string `json:"filter"`
+}
+
+func init() {
+	register.Plugin("deadcode", NewDeadCode)
+}
+
+// NewDeadCode retuns new instance linter.
+func NewDeadCode(settings any) (register.LinterPlugin, error) {
+	s, err := register.DecodeSettings[Settings](settings)
+	if err != nil {
+		return nil, err
+	}
+
+	issues, err := runAnalysis(s)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +62,7 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	return []*analysis.Analyzer{
 		{
 			Name: "deadcode",
-			Doc:  "finds unused funcs",
+			Doc:  "finds unreachable funcs.",
 			Run:  d.run,
 		},
 	}, nil
@@ -47,20 +70,32 @@ func (d *DeadCode) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 
 func (d *DeadCode) run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
-		pos := pass.Fset.Position(file.Pos())
+		filename := Rel(pass.Fset.Position(file.Pos()).Filename)
 		for _, issue := range d.issues {
-			if GetFilenameRelative(pos.Filename) == issue.Filename {
-				pass.Report(analysis.Diagnostic{
-					Pos:            issue.Pos,
-					End:            0,
-					Category:       "deadcode",
-					Message:        fmt.Sprintf("unused func `%s`", issue.Name),
-					SuggestedFixes: nil,
-				})
+			if filename != issue.Filename {
+				continue
 			}
+
+			ast.Inspect(file, func(n ast.Node) bool {
+				funcDecl, ok := n.(*ast.FuncDecl)
+				if !ok {
+					return true
+				}
+
+				funcDeclPos := pass.Fset.Position(funcDecl.Pos())
+				if funcDeclPos.Line == issue.Line {
+					pass.Report(analysis.Diagnostic{
+						Pos:            funcDecl.Pos(),
+						End:            0,
+						Message:        fmt.Sprintf("func `%s` is unused", issue.Func),
+						SuggestedFixes: nil,
+					})
+				}
+
+				return true
+			})
 		}
 	}
-
 	return nil, nil
 }
 
@@ -68,9 +103,9 @@ func (d *DeadCode) GetLoadMode() string {
 	return register.LoadModeSyntax
 }
 
-func runAnalysis() ([]Issue, error) {
-	testFlag := false
-	filterFlag := "<module>"
+func runAnalysis(settings Settings) ([]Issue, error) {
+	testFlag := settings.Test
+	filterFlag := settings.Filter
 
 	// Load, parse, and type-check the complete program(s).
 	cfg := &packages.Config{
@@ -80,29 +115,27 @@ func runAnalysis() ([]Issue, error) {
 
 	initial, err := packages.Load(cfg, "./...")
 	if err != nil {
-		log.Fatalf("Load: %v", err)
+		return nil, fmt.Errorf("Load: %v", err)
 	}
 
 	if len(initial) == 0 {
-		log.Fatalf("no packages")
+		return nil, errors.New("no find packages")
 	}
 
 	if packages.PrintErrors(initial) > 0 {
-		log.Fatalf("packages contain errors")
+		return nil, errors.New("packages contain errors")
 	}
 
 	// If -filter is unset, use first module (if available).
-	if filterFlag == "<module>" {
+	if filterFlag == "" {
 		if mod := initial[0].Module; mod != nil && mod.Path != "" {
 			filterFlag = "^" + regexp.QuoteMeta(mod.Path) + "\\b"
-		} else {
-			filterFlag = "" // match any
 		}
 	}
 
 	filter, err := regexp.Compile(filterFlag)
 	if err != nil {
-		log.Fatalf("-filter: %v", err)
+		return nil, fmt.Errorf("failed create filter: %v", err)
 	}
 
 	// Create SSA-form program representation and find main packages.
@@ -111,7 +144,7 @@ func runAnalysis() ([]Issue, error) {
 
 	mains := ssautil.MainPackages(pkgs)
 	if len(mains) == 0 {
-		log.Fatalf("no main packages")
+		return nil, errors.New("no find main packages")
 	}
 
 	var roots []*ssa.Function
@@ -168,14 +201,14 @@ func runAnalysis() ([]Issue, error) {
 
 	// Build array of jsonPackage objects.
 	var issues []Issue
-	for _, pkgpath := range slices.Sorted(maps.Keys(byPkgPath)) {
+	for pkgpath := range maps.Keys(byPkgPath) {
 		if !filter.MatchString(pkgpath) {
 			continue
 		}
 
 		m := byPkgPath[pkgpath]
 
-		for _, fn := range slices.Collect(maps.Keys(m)) {
+		for fn := range maps.Keys(m) {
 			pos := prog.Fset.Position(fn.Pos())
 
 			if generated[pos.Filename] {
@@ -183,10 +216,9 @@ func runAnalysis() ([]Issue, error) {
 			}
 
 			issues = append(issues, Issue{
-				Name:     fn.Name(),
-				Filename: GetFilenameRelative(pos.Filename),
+				Func:     fn.Name(),
+				Filename: Rel(pos.Filename),
 				Line:     pos.Line,
-				Pos:      fn.Pos(),
 			})
 		}
 	}
@@ -194,24 +226,16 @@ func runAnalysis() ([]Issue, error) {
 	return issues, nil
 }
 
-func GetFilenameRelative(filename string) string {
+// Rel returns a relative path.
+func Rel(filename string) string {
 	if rel, err := filepath.Rel(cwd, filename); err == nil {
 		return rel
 	}
 	return filename
 }
 
-type DeadCode struct {
-	issues []Issue
-}
-
-type Issue struct {
-	Name     string
-	Filename string
-	Line     int
-	Pos      token.Pos
-}
-
+// ReceiverNamed returns the named type (if any) associated with the
+// type of recv, which may be of the form N or *N, or aliases thereof.
 func ReceiverNamed(recv *types.Var) (isPtr bool, named *types.Named) {
 	t := recv.Type()
 	if ptr, ok := types.Unalias(t).(*types.Pointer); ok {
