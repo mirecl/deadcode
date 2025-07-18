@@ -126,16 +126,14 @@ func runAnalysis(settings Settings) ([]Issue, error) {
 		return nil, errors.New("packages contain errors")
 	}
 
-	// If -filter is unset, use first module (if available).
-	if filterFlag == "" {
-		if mod := initial[0].Module; mod != nil && mod.Path != "" {
-			filterFlag = "^" + regexp.QuoteMeta(mod.Path) + "\\b"
-		}
-	}
+	var filter *regexp.Regexp
 
-	filter, err := regexp.Compile(filterFlag)
-	if err != nil {
-		return nil, fmt.Errorf("failed create filter: %v", err)
+	// If -filter is unset, use first module (if available).
+	if filterFlag != "" {
+		filter, err = regexp.Compile(filterFlag)
+		if err != nil {
+			return nil, fmt.Errorf("failed create filter: %v", err)
+		}
 	}
 
 	// Create SSA-form program representation and find main packages.
@@ -202,7 +200,7 @@ func runAnalysis(settings Settings) ([]Issue, error) {
 	// Build array of jsonPackage objects.
 	var issues []Issue
 	for pkgpath := range maps.Keys(byPkgPath) {
-		if !filter.MatchString(pkgpath) {
+		if filter != nil && !filter.MatchString(pkgpath) {
 			continue
 		}
 
