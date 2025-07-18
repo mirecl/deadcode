@@ -115,7 +115,7 @@ func runAnalysis(settings Settings) ([]Issue, error) {
 
 	initial, err := packages.Load(cfg, "./...")
 	if err != nil {
-		return nil, fmt.Errorf("Load: %v", err)
+		return nil, fmt.Errorf("load: %v", err)
 	}
 
 	if len(initial) == 0 {
